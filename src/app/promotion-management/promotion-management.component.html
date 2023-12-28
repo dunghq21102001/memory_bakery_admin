@@ -1,0 +1,171 @@
+<div>
+        <div class="row">
+            <div class="header-box">
+                <h1>Danh sách khuyến mãi</h1>
+            </div>
+        </div>
+        <hr>
+        <div class="content-box-action">
+            <div class="content-box-action-container--button">
+              <button (click)="showPromotionNew()" class="content-box-action--button">Thêm khuyến mãi mới</button>
+            </div>
+            <form (ngSubmit)="submitForm()" class="content-box-action--search">
+              <input class="content-box-action--search-input" [(ngModel)]="search" name="search"
+                  placeholder="Tìm Kiếm . . ." />
+              <fa-icon (click)="submitForm()" [icon]="faSearchPlus" [style]="{cursor: 'pointer'}" size="lg"
+                  class="search-icon"></fa-icon>
+            </form>
+        </div>
+      <div class="display-list mt-3">
+        <table class="table text-center table-hover">
+          <thead>
+            <tr>
+                <th>Mã khuyến mãi</th>
+                <th>Mức giảm</th>
+                <th>Số lượng</th>
+                <th>Điều kiện</th>
+                <th>Ngày bắt đầu</th>
+                <th>Ngày hết hạn</th>
+                <th>Chức năng</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of promotions">
+                <td>{{p.Code}}</td>
+                <td>{{p.Discount}}</td>
+                <td>{{p.Quantity}}</td>
+                <td>{{p.Description}}</td>
+                <td>{{p.StartDate}}</td>
+                <td>{{p.ExpireDate}}</td>
+              <td class="d-flex justify-content-end" >
+                <fa-icon (click)="showPromotionDetail(p)" [icon]="faEdit" class="edit-icon"
+                [style]="{cursor: 'pointer'}" size="lg"></fa-icon>
+                <fa-icon
+                [swal]="{ title: 'Bạn có chắc chắn muốn xoá ', showCancelButton: true }"
+                (confirm)="deletePromotion(p._id)" (dismiss)="handleDismiss($event)"
+                [icon]="faDelete" class="delete-icon" [style]="{cursor: 'pointer'}"
+                size="lg"></fa-icon>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination-container">
+        <p (click)="paginateIcon('pre')"><i class="fa-solid fa-chevron-left"></i></p>
+        <ul>
+            <li *ngFor="let i of totalPage; let indexOfElement=index" (click)="paginate(indexOfElement + 1)"
+                [class.paginate-active]="page == indexOfElement + 1">{{indexOfElement + 1}}</li>
+        </ul>
+        <p (click)="paginateIcon('next')"><i class="fa-solid fa-chevron-right"></i></p>
+    </div>
+</div>
+
+<div *ngIf="showDetail" class="modal">
+  <div class="promotion-detail">
+    <div class="title">Chi tiết khuyến mãi {{selectedPromotion.Code}}</div>
+    <div class="information">
+      <div class="sub_title">Thông tin chung</div>
+      <hr>
+      <div class="row">
+          <div class="form-group row">
+            <label class="col-sm-5 col-form-label">Mã khuyến mãi:</label>
+            <div class="col-sm-7">
+              <input type="text" readonly="" class="form-control-plaintext" value="{{selectedPromotion.Code}}">
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-5 col-form-label">Mô tả:</label>
+            <div class="col-sm-7">
+              <input type="text" readonly="" class="form-control-plaintext" value="{{selectedPromotion.Name}}">
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-5 col-form-label">Mức giảm:</label>
+            <div class="col-sm-7">
+              <input type="text" readonly="" class="form-control-plaintext" value="{{selectedPromotion.Discount}}">
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-5 col-form-label">Số lượng:</label>
+            <div class="col-sm-7">
+              <input type="text" readonly="" class="form-control-plaintext" value="{{selectedPromotion.Quantity}}">
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-5 col-form-label">Điều kiện:</label>
+            <div class="col-sm-7">
+              <input type="text" readonly="" class="form-control-plaintext" value="{{selectedPromotion.Condition}}">
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-5 col-form-label">Ngày khởi tạo:</label>
+            <div class="col-sm-7">
+              <input type="text" readonly="" class="form-control-plaintext" value="{{selectedPromotion.CreatedDate}}">
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-5 col-form-label">Ngày bắt đầu:</label>
+            <div class="col-sm-7">
+              <input type="text" readonly="" class="form-control-plaintext" value="{{selectedPromotion.StartDate}}">
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-5 col-form-label">Ngày kết thúc:</label>
+            <div class="col-sm-7">
+              <input type="text" readonly="" class="form-control-plaintext" value="{{selectedPromotion.ExpireDate}}">
+            </div>
+          </div>
+      </div>
+    </div>
+    <div class="function">
+      <button class ="close-btn" (click)="closePromotionDetail()">Quay lại</button>
+    </div>
+  </div>
+</div>
+
+
+<div *ngIf="showAddPromotion" class="modal">
+  <div class="promotion-new">
+    <div class="title">Tạo mã khuyến mãi mới</div>
+    <p>Để tạo mã khuyến mãi mới, vui lòng điền các thông tin dưới đây:</p>
+    <div class="information">
+      <form >
+        <div class="col">
+          <input type="text" class="form-control" name="Code" id="Code" placeholder="Mã khuyến mãi:" required  [(ngModel)]="promotion.Code">
+        </div>
+        <div class="col">
+          <input type="text"class="form-control" name="Name" id="Name" placeholder="Mô tả" required  [(ngModel)]="promotion.Name">
+        </div>
+
+        <div class="col">
+          <input type="text" class="form-control" name="Discount" id="Discount" placeholder="Mức giảm:"[(ngModel)]="promotion.Discount" >
+        </div>
+
+        <div class="col">
+          <input type="text" class="form-control" name="Quantity" id="Quantity" placeholder="Số lượng:"[(ngModel)]="promotion.Quantity" >
+        </div>
+
+        <div class="col">
+          <input type="text" class="form-control" name="Condition" id="Condition" placeholder="Điều kiện:"[(ngModel)]="promotion.Condition" >
+        </div>
+
+        <div class="col">
+          <input type="date" class="form-control" name="StartDate" id="StartDate" placeholder="Ngày bắt đầu:"[(ngModel)]="formattedStartDate" >
+        </div>
+
+        <div class="col">
+          <input type="date" class="form-control" name="ExpireDate" id="ExpireDate" placeholder="Ngày kết thúc:"[(ngModel)]="formattedExpireDate" >
+        </div>
+
+        <div class="button">
+          <button type="button" class="btn btn-primary input" (click)="closePromotionNew()">
+                  Trở lại
+          </button>
+          <button type="button" class="btn btn-primary input" (click)="postPromotion()" style="margin-left: 20px;">
+            Hoàn thành
+        </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

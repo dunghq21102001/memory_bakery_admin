@@ -1,0 +1,245 @@
+<div class="container">
+  <div class="header-box">
+      <h4>Danh sách sản phẩm</h4>
+      <button (click)="actionAdd()"><fa-icon [icon]="faPlus" size="lg"></fa-icon> Thêm sản phẩm</button>
+  </div>
+  <div class="content-box">
+      <div class="line"></div>
+      <div class="content-box-action">
+          <div class="content-box-action-container--sort">
+              <button id="sort-btn" (click)="isShowModelSort = !isShowModelSort" class="content-box-action--sort">
+                  <fa-icon [icon]="faFilter" [style]="{margin: '0 10px'}" size="lg"></fa-icon>
+                  <span>{{isSelectedSort || 'Sắp xếp theo'}}</span>
+              </button>
+              <ul *ngIf="isShowModelSort" id="ulSort">
+                  <li (click)="selectOption(itemSort)" [class.li-active]="itemSort == isSelectedSort"
+                      *ngFor="let itemSort of listSort">{{itemSort}}</li>
+              </ul>
+          </div>
+          <form (ngSubmit)="submitForm()" class="content-box-action--search">
+              <input class="content-box-action--search-input" [(ngModel)]="search" name="search"
+                  placeholder="Tìm Kiếm . . ." />
+              <fa-icon (click)="submitForm()" [icon]="faSearchPlus" [style]="{cursor: 'pointer'}" size="lg"
+                  class="search-icon"></fa-icon>
+          </form>
+      </div>
+      <div class="content-box-table">
+          <table>
+              <thead>
+                  <tr>
+                      <th>Tên sản phẩm</th>
+                      <th>Danh mục</th>
+                      <th>Kích thước</th>
+                      <th>Giá bán</th>
+                      <th>Thời gian tạo</th>
+                      <th>Thời gian chỉnh sửa</th>
+                      <th>Hành động</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  <tr *ngFor="let product of listProducts" class="tr-custom">
+                      <td>
+                          <p [title]="product.Name" class="trundicate">
+                              {{product.Name}}
+                          </p>
+                      </td>
+                      <td>{{product.Category}}</td>
+                      <td>
+                          <select (change)="isChoose($event, product)" name="" id="">
+                              <option *ngFor="let v of product.Variant; let i = index" [ngValue]="v"
+                                  [defaultSelected]="i == 0">
+                                  {{v.Size}}
+                              </option>
+                          </select>
+                      </td>
+                      <td *ngIf="!isChangeValue">{{ convertVND(+product.Variant[0].UnitPrice) }}</td>
+                      <td *ngIf="isChangeValue">
+                          <span [class.isChoose]=" selectVariant.parent_id == product._id">
+                              {{
+                              selectVariant.parent_id == product._id
+                              ? convertVND(+selectVariant.UnitPrice)
+                              : convertVND(+product.Variant[0].UnitPrice)
+                              }}
+                          </span>
+                      </td>
+                      <td>{{convertDate(product.CreatedAt)}}</td>
+                      <td>{{convertDate(product.UpdatedAt)}}</td>
+                      <td>
+                          <div class="table-action">
+                              <fa-icon (click)="actionUpdate(product._id)" [icon]="faEdit" class="edit-icon"
+                                  [style]="{cursor: 'pointer'}" size="lg"></fa-icon>
+                              <fa-icon
+                                  [swal]="{ title: 'Bạn có chắc chắn muốn xoá ' + product.Name,  showCancelButton: true }"
+                                  (confirm)="deleteProduct(product._id)" (dismiss)="handleDismiss($event)"
+                                  [icon]="faDelete" class="delete-icon" [style]="{cursor: 'pointer'}"
+                                  size="lg"></fa-icon>
+                          </div>
+                      </td>
+                  </tr>
+              </tbody>
+          </table>
+          <div class="pagination-container">
+              <p (click)="paginateIcon('pre')"><i class="fa-solid fa-chevron-left"></i></p>
+              <ul>
+                  <li *ngFor="let i of totalPage; let indexOfElement=index" (click)="paginate(indexOfElement + 1)"
+                      [class.paginate-active]="page == indexOfElement + 1">{{indexOfElement + 1}}</li>
+              </ul>
+              <p (click)="paginateIcon('next')"><i class="fa-solid fa-chevron-right"></i></p>
+          </div>
+      </div>
+  </div>
+</div>
+
+<!-- form create/update -->
+<div class="fog" id="fog" *ngIf="isShow">
+
+  <!-- form mac dinh -->
+  <div class="form">
+      <div class="form-title">
+          Điền thông tin sản phẩm
+      </div>
+      <div class="form-input">
+          <label for="">Tên sản phẩm</label>
+          <input [(ngModel)]="product.Name" #name="ngModel" type="text">
+      </div>
+      <div class="form-input">
+          <label for="">Danh mục</label>
+          <!-- <input placeholder="Tên danh mục . . ." [(ngModel)]="product.Category" #category="ngModel" type="text"> -->
+          <select [(ngModel)]="product.Category" name="" id="">
+              <option value="" [defaultSelected]="true">
+                  Hãy chọn 1 danh mục
+              </option>
+              <option *ngFor="let cate of listCategories" [ngValue]="cate">
+                  {{cate}}
+              </option>
+          </select>
+      </div>
+      <div class="form-input">
+          <label for="">Kích thước</label>
+          <select (change)="checkToShowVariantButton()" [(ngModel)]="haveSize" name=""
+              [class.select-none]="isUpdate ? true : false" [disabled]="isUpdate ? true : false" id="">
+              <option value="n" [defaultSelected]="true">
+                  Không có size
+              </option>
+              <option value="y">
+                  Có Size
+              </option>
+          </select>
+      </div>
+      <div *ngIf="haveSize == 'y'" style="justify-content: flex-end;" class="form-input">
+          <!-- <label for="">Kích thước</label> -->
+          <input placeholder="Điền kích thước tại đây" [(ngModel)]="variant.Size" #size="ngModel" type="text">
+      </div>
+      <div class="form-input">
+          <label for="">Giá bán</label>
+          <input [(ngModel)]="variant.UnitPrice" #unitPrice="ngModel" type="text">
+          <span>VND</span>
+      </div>
+      <div class="form-input">
+          <label for="">Giá khuyến mãi</label>
+          <input type="text" [(ngModel)]="variant.PromotionPrice" #promotionPrice="ngModel">
+          <span>VND</span>
+      </div>
+      <div class="form-input" style="display: flex; flex-direction: column; align-items: flex-start;">
+          <label for="">Mô tả</label>
+          <!-- <angular-editor [(ngModel)]="product.Description" #description="ngModel"
+              [placeholder]="'Enter text here...'"></angular-editor> -->
+              <ckeditor [editor]="Editor" name="ngModel" class="form-control-plaintext custom-ckeditor" [(ngModel)]="product.Description" >
+              </ckeditor>
+      </div>
+      <div class="form-input">
+          <label for="">Hình ảnh sản phẩm</label>
+          <button *ngIf="listCreateImageTmp?.length != 4" (click)="fileUpload.click()">Thêm hình ảnh</button>
+      </div>
+      <div class="form-image-box">
+          <input style="display: none;" type="file" #fileUpload name="Img" (change)="onFileChange($event)">
+          <div class="form-image-item" *ngFor="let pImg of listCreateImageTmp">
+              <img [src]="pImg" alt="">
+              <button class="form-image-btn" (click)="onRemove(pImg)">❌</button>
+          </div>
+      </div>
+      <div class="form-button-box">
+          <button *ngIf="haveSize== 'y'" (click)="createSize()">Tạo thêm size bánh</button>
+          <button *ngIf="isCreate" (click)="storeProduct()">Lưu</button>
+          <button *ngIf="isUpdate" (click)="updateProduct(product)">Chỉnh sửa</button>
+          <button (click)="actionCancel()">Huỷ bỏ</button>
+      </div>
+      <div class="varian-list" *ngIf="product.Variant.length > 0 && isCreate">
+          <h4>Các kích thước khác của bánh</h4>
+          <div *ngFor="let oVa of product.Variant"
+              style="display: flex; justify-content: space-between; align-items: center; width: 80%; border: 1px solid #000; padding: 10px; position: relative;">
+              <div style="display: flex; flex-direction: column; justify-content: flex-start;">
+                  <span>Size: </span>
+                  <span>Giá Gốc: </span>
+                  <span>Giá Khuyến Mãi</span>
+                  <span></span>
+              </div>
+              <div style="display: flex; flex-direction: column; justify-content: flex-end; text-align: right;">
+                  <span>{{oVa.Size}}</span>
+                  <span>{{convertVND(oVa.UnitPrice)}}</span>
+                  <span>{{convertVND(oVa.PromotionPrice)}}</span>
+                  <span
+                      [swal]="{ title: 'Bạn có chắc chắn muốn xoá bánh có kích thước là ' + oVa.Size,  showCancelButton: true }"
+                      (confirm)="deleteVariantTmp(product, oVa)" (dismiss)="handleDismiss($event)" class="delete-icon"
+                      [style]="{cursor: 'pointer'}" [style]="{cursor: 'pointer'}" style="cursor: pointer;">
+                      Xoá
+                  </span>
+              </div>
+          </div>
+      </div>
+      <div *ngIf="isUpdate && haveSize == 'y' && product?.Variant?.length != 0" class="varian-list">
+          <h4>Các kích thước khác của bánh</h4>
+          <div *ngFor="let vari of product.Variant; let iVar = index" [class.hidden]="iVar == 0" class="varian-item">
+              <div class="varian-info">
+                  <img [src]="convertBase64ToImage(product.Img[0])" alt="">
+                  <div class="varian-info-text">
+                      <span>{{product.Name}}</span>
+                      <span>Size {{vari.Size}}</span>
+                      <span>{{convertVND(+vari.UnitPrice)}}</span>
+                  </div>
+              </div>
+              <div class="varian-action">
+                  <fa-icon (click)="isShowVarian(vari.Size)" [icon]="faEdit" class="edit-icon"
+                      [style]="{cursor: 'pointer'}" size="lg"></fa-icon>
+                  <fa-icon
+                      [swal]="{ title: 'Bạn có chắc chắn muốn xoá bánh có kích thước là ' + vari.Size,  showCancelButton: true }"
+                      (confirm)="deleteVariant(product, vari)" (dismiss)="handleDismiss($event)" [icon]="faDelete"
+                      class="delete-icon" [style]="{cursor: 'pointer'}" [icon]="faDelete" class="delete-icon"
+                      [style]="{cursor: 'pointer'}" size="lg"></fa-icon>
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <!-- form kích thước -->
+  <div *ngIf="isVarian" action="" class="variant-form">
+      <div class="form-title">
+          Điền thông tin kích thước
+      </div>
+      <div class="form-input">
+          <label for="">Kích thước</label>
+          <input [class.select-none]="!isCreate && !updateMore" [disabled]="!isCreate && !updateMore"
+              [(ngModel)]="orVariant.Size" type="text">
+      </div>
+      <div class="form-input">
+          <label for="">Giá bán</label>
+          <input [(ngModel)]="orVariant.UnitPrice" type="text">
+          <span>VND</span>
+      </div>
+      <div class="form-input">
+          <label for="">Giá khuyến mãi</label>
+          <input [(ngModel)]="orVariant.PromotionPrice" type="text">
+          <span>VND</span>
+      </div>
+      <div class="form-button-box">
+          <button (click)="storeVariant()" *ngIf="isCreate">Lưu</button>
+          <button *ngIf="isUpdate && !updateMore" (click)="updateVariant(product, orVariant)">Chỉnh sửa</button>
+          <button *ngIf="isUpdate && updateMore" (click)="storeVariant()">Thêm</button>
+          <button (click)="actionCancelVariant()">Huỷ bỏ</button>
+      </div>
+  </div>
+
+</div>
+<div *ngIf="isLoading" class="loader">
+  <div class="loader-spin"></div>
+</div>
